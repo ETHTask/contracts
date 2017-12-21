@@ -1,7 +1,7 @@
-
+pragma solidity ^0.4.17;
 
 contract Organization {
-  uint contractBalance;
+  uint contractBalance ;
   mapping(address => bool) workerMapping;
 
   event LogWorkerAdded(address _worker);
@@ -9,11 +9,12 @@ contract Organization {
   event LogWorkerRewarded(address _worker, uint _reward);
   event LogDeposit(uint amount);
 
-  function Organization(uint initialDeposit)
+  function Organization()
+    public
     payable
-    depositNotZero(initialDeposit)
+    depositNotZero()
   {
-    contractBalance += initialDeposit;
+    contractBalance += msg.value;
   }
 
   function addWorker(address _worker)
@@ -47,14 +48,15 @@ contract Organization {
     returns (bool success)
   {
     contractBalance -= rewardAmount;
-    _worker.transfer(rewardAmount);
     LogWorkerRewarded(_worker, rewardAmount);
+    _worker.transfer(rewardAmount);
     return true;
   }
 
   function deposit()
     payable
     public
+    depositNotZero()
     returns (bool success)
   {
     contractBalance += msg.value;
@@ -64,25 +66,31 @@ contract Organization {
 
   modifier depositNotZero() {
     require(msg.value > 0);
+    _;
   }
 
   modifier validWorkerAddress(address _worker) {
     require(_worker != 0);
+    _;
   }
 
   modifier isNewWorker(address _worker) {
     require(workerMapping[_worker] == false);
+    _;
   }
 
   modifier isExistingWorker(address _worker) {
     require(workerMapping[_worker] == true);
+    _;
   }
 
-  modifier validRewardAmount(uint _reward) {
+  modifier isValidRewardAmount(uint _reward) {
     require(_reward != 0);
+    _;
   }
 
   modifier sufficientFunds(uint _reward) {
     require(contractBalance > _reward);
+    _;
   }
 }
