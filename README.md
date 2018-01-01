@@ -12,3 +12,6 @@ This is the main contract the an organization will interact with.
 2. `removeWorker(address _worker)` -> Remove a worker/member from your workforce.
 3. `rewardAmount(address _worker, uint rewardAmount)` -> Reward a worker/member of your workforce.
 4. `deposit` -> Deposit more ETH into the contract
+
+## Currently passes the following tests
+![Screenshot](passing-tests.png)
