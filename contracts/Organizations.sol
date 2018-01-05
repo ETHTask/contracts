@@ -1,25 +1,36 @@
 pragma solidity ^0.4.17;
 
-import "./Owned.sol";
 
-
-contract Organization is Owned {
+contract Organizations {
     uint public contractBalance;
-    mapping(address => bool) private workerMapping;
+    mapping(address => mapping(address => bool)) private orgWorkerMapping;
+    mapping(address => bool) private orgExistanceMapping;
+    mapping(address => uint) private orgBalanceMapping;
 
+    event LogOrganizationAdded(address _org);
     event LogWorkerAdded(address _worker);
     event LogWorkerRemoved(address _worker);
     event LogWorkerRewarded(address _worker, uint _reward);
     event LogDeposit(uint amount);
 
+    function addOrganization()
+    public
+    isNewOrganization()
+    returns (bool success)
+    {
+        orgExistanceMapping[msg.sender] = true;
+        LogOrganizationAdded(msg.sender);
+        return success;
+    }
+
     function addWorker(address _worker)
     public
     validWorkerAddress(_worker)
     isNewWorker(_worker)
-    fromOwner()
+    isExistingOrganization()
     returns (bool success)
     {
-        workerMapping[_worker] = true;
+        orgWorkerMapping[msg.sender][_worker] = true;
         LogWorkerAdded(_worker);
         return success;
     }
@@ -28,10 +39,10 @@ contract Organization is Owned {
     public
     validWorkerAddress(_worker)
     isExistingWorker(_worker)
-    fromOwner()
+    isExistingOrganization()
     returns (bool success)
     {
-        workerMapping[_worker] = false;
+        orgWorkerMapping[msg.sender][_worker] = false;
         LogWorkerRemoved(_worker);
         return success;
     }
@@ -41,11 +52,13 @@ contract Organization is Owned {
     validWorkerAddress(_worker)
     isExistingWorker(_worker)
     isValidRewardAmount(rewardAmount)
-    sufficientFunds(rewardAmount)
-    fromOwner()
+    isExistingOrganization()
+    sufficientContractFunds(rewardAmount)
+    sufficientOrgFunds(rewardAmount)
     returns (bool success)
     {
         contractBalance -= rewardAmount;
+        orgBalanceMapping[msg.sender] -= rewardAmount;
         LogWorkerRewarded(_worker, rewardAmount);
         _worker.transfer(rewardAmount);
         return true;
@@ -55,10 +68,11 @@ contract Organization is Owned {
     public
     payable
     depositNotZero()
-    fromOwner()
+    isExistingOrganization()
     returns (bool success)
     {
         contractBalance += msg.value;
+        orgBalanceMapping[msg.sender] += msg.value;
         LogDeposit(msg.value);
         return true;
     }
@@ -66,13 +80,34 @@ contract Organization is Owned {
     function getWorkerExistance(address worker)
     public
     constant
+    isExistingOrganization()
+    isExistingWorker(worker)
     returns (bool)
     {
-        return workerMapping[worker];
+        return orgWorkerMapping[msg.sender][worker];
+    }
+
+    function getOrganizationBalance()
+    public
+    constant
+    isExistingOrganization()
+    returns (uint)
+    {
+        return orgBalanceMapping[msg.sender];
     }
 
     modifier depositNotZero() {
         require(msg.value > 0);
+        _;
+    }
+
+    modifier isNewOrganization() {
+        require(orgExistanceMapping[msg.sender] == false);
+        _;
+    }
+
+    modifier isExistingOrganization() {
+        require(orgExistanceMapping[msg.sender] == true);
         _;
     }
 
@@ -82,12 +117,12 @@ contract Organization is Owned {
     }
 
     modifier isNewWorker(address _worker) {
-        require(workerMapping[_worker] == false);
+        require(orgWorkerMapping[msg.sender][_worker] == false);
         _;
     }
 
     modifier isExistingWorker(address _worker) {
-        require(workerMapping[_worker] == true);
+        require(orgWorkerMapping[msg.sender][_worker] == true);
         _;
     }
 
@@ -96,8 +131,13 @@ contract Organization is Owned {
         _;
     }
 
-    modifier sufficientFunds(uint _reward) {
+    modifier sufficientContractFunds(uint _reward) {
         require(contractBalance > _reward);
+        _;
+    }
+
+    modifier sufficientOrgFunds(uint _reward) {
+        require(orgBalanceMapping[msg.sender] > _reward);
         _;
     }
 }

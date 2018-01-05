@@ -1,7 +1,5 @@
-var Organization = artifacts.require("./Organization.sol");
-var Owned = artifacts.require("./Owned.sol");
+var Organizations = artifacts.require("./Organizations.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(Organization);
-  deployer.deploy(Owned);
+  deployer.deploy(Organizations);
 };
